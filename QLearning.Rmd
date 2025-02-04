@@ -1,0 +1,97 @@
+---
+title: "Q-Learning"
+output:
+  word_document: default
+  pdf_document: default
+date: "December 8th, 2023"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+```
+
+```{r Pt.DefQLearn}
+
+# Declare and define a function to perform Q-Learning
+# Inputs: A Scoring Matrix (score)
+#         The number of episodes to cycle through (n)
+#         The Learning Rate (lr)
+#         The Discount Factor (df)
+#         The termination state of the problem (target)
+q.learn <- function(scores, n, lr, df, target) {
+  
+  # Declare and Define the Q matrix that will hold all our Q-values.
+  # This is the same size as the scoring matrix as we should calculate Q-values
+  # for all possible scores. 
+  q <- matrix(rep(0,length(scores)), nrow=nrow(scores))
+  
+  # For all episodes, do the following:
+  for (i in 1:n) {
+    # Declare and define the initial state for each episode
+    initial.state <- sample(1:nrow(scores), 1)
+    
+    # Iterate through the MDP until the target state is reached
+    while (TRUE) {
+      
+      # Choose the next state to travel to within the MDP
+      # Only choose an action associated with a score greater than -1, 
+      # signifying that it is a viable option
+      actions <- which(scores[initial.state,] > -1)
+      
+      # If there exists only one action, do the following:
+      if (length(actions) == 1){
+        next.action <- actions
+      }
+      # Otherwise, choose a viable action at random
+      else{
+        next.action <- sample(actions, 1)
+      }
+      # Declare and define the utility function for the next state using the
+      # maximum function
+      utility.func <- max(q[next.action, which(scores[next.action,] > -1)])
+
+      # Declare and define the Q-Learning model as specified
+      q[initial.state, next.action] <- q[initial.state, next.action] + 
+        lr*(scores[initial.state, next.action] + df*utility.func - 
+              q[initial.state, next.action])
+      
+      # If the target state is reached, halt all calculations as an complete
+      # MDP pathway has been realized
+      if (next.action == target) {
+        break
+      }
+      else {
+        initial.state <- next.action
+      }
+    }
+  }
+  
+  # Return the Q matrix
+  return(q)
+}
+
+```
+
+
+
+```{r Pt.FakeEx}
+
+# Create an arbitrary scoring matrix
+scores <- matrix(c(-1,  4,  2,  -1, -1,  -1,
+                   -1, -1,  5,  10, -1,  -1,
+                   -1, -1, -1,  -1,  3,  -1, 
+                   -1, -1, -1,  -1, -1,  11,
+                   -1, -1, -1,   4, -1,  -1,
+                   -1, -1, -1,  -1, -1,   0), nrow=6, ncol=6, byrow=TRUE)
+
+# Run the Q-Learning model with 100 episodes to compute the Q matrix
+results <- q.learn(scores, n=100, lr=0.1, df=0.8, target=6) 
+
+# Round the results of the Q matrix for readability
+round(results)
+
+```
+
+
